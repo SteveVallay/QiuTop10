@@ -13,11 +13,14 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.ListActivity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.util.Log;
 import android.util.Xml;
 import android.view.LayoutInflater;
@@ -35,7 +38,7 @@ public class MainActivity extends ListActivity {
      * Currently running background network thread.
      */
     private RSSWorker mWorker;
-    public static final String QIUBAI_RSS_ADDR = "http://feed.feedsky.com/qiushi";
+    public static final String QIUBAI_RSS_ADDR = "http://feed.qiushibaike.com/rss";
     /**
      * Handler used to post runnables to the UI thread.
      */
@@ -228,17 +231,24 @@ public class MainActivity extends ListActivity {
         private String mTitle;
         private String mLink;
         private String mDescription;
+        private String mPubDate;
 
         public RssItem() {
             mTitle = "";
             mLink = "";
             mDescription = "";
         }
-        public RssItem(String title, String link, String desc) {
+        public RssItem(String title, String link, String desc, String pubDate) {
             mTitle = title;
             mLink = link;
             mDescription = desc;
+            mPubDate = pubDate;
         }
+
+        public String getPubDate() {
+            return mPubDate;
+        }
+
         public String getTitle() {
             return mTitle;
         }
@@ -271,6 +281,7 @@ public class MainActivity extends ListActivity {
         String title = "";
         String link = "";
         String description = "";
+        String pubDate = "";
         eventType = xpp.getEventType();
         while (eventType != XmlPullParser.END_DOCUMENT) {
             if (eventType == XmlPullParser.START_TAG) {
@@ -286,6 +297,9 @@ public class MainActivity extends ListActivity {
                 } else if (tag.equals("description")) {
                     xpp.next();
                     description = xpp.getText();
+                } else if (tag.equals("pubDate")) {
+                    xpp.next();
+                    pubDate = xpp.getText();
                 }
             } else if (eventType == XmlPullParser.END_TAG) {
                 // We have a comlete item -- post it back to the UI
@@ -293,8 +307,9 @@ public class MainActivity extends ListActivity {
                 // running on the UI thread).
                 String tag = xpp.getName();
                 if (tag.equals("item")) {
-                    RssItem item = new RssItem(title, link, description);
+                    RssItem item = new RssItem(title, link, description, pubDate);
                     log("paraseRss: desc=" + description);
+                    insertToDB(item);
                     mHandler.post(new ItemAdder(item));
                     return item;
                 }
@@ -303,8 +318,25 @@ public class MainActivity extends ListActivity {
         }
         return null;
     }
-    public void log(String msg){
+
+    public void log(String msg) {
         Log.d("HACKER", msg);
     }
 
+    public boolean insertToDB(RssItem item) {
+        //query if it already exit
+//        Cursor cursor = getContentResolver().query(RSSApp.RssItems.CONTENT_URI, projection,
+//                selection, selectionArgs, sortOrder);
+        ContentValues values = new ContentValues();
+        values.put(RSSApp.RssItems.COLUMN_NAME_TITLE, item.getTitle());
+        values.put(RSSApp.RssItems.COLUMN_NAME_DESCRIPTION, item.getDescription());
+        values.put(RSSApp.RssItems.COLUMN_NAME_PUBDATE, item.getPubDate());
+        Uri newUri = getContentResolver().insert(RSSApp.RssItems.CONTENT_URI, values);
+        if (newUri != null){
+            log("insertToDB: " + newUri);
+        } else {
+            log("insertToDb: fail!");
+        }
+        return false;
+    }
 }

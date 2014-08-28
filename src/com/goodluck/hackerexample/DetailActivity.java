@@ -1,24 +1,18 @@
 package com.goodluck.hackerexample;
 
-import com.goodluck.hackerexample.MainActivity.RssItem;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.webkit.WebView;
 
 public class DetailActivity extends Activity {
-
-    private RssItem mItem;
 
     private WebView mWebView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.details);
         mWebView = (WebView) findViewById(R.id.activity_main_webview);
-        mHandler = new Handler();
         Intent intent = getIntent();
         if (intent != null) {
             String data = intent.getExtras().getString("data");
