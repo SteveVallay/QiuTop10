@@ -61,6 +61,18 @@ public final class RSSApp {
         /**
          * The default sort order for this table
          */
+        /**
+         * Column name for the creation timestamp
+         * <P>Type: INTEGER (long from System.curentTimeMillis())</P>
+         */
+        public static final String COLUMN_NAME_CREATE_DATE = "created";
+
+        /**
+         * Column name for the modification timestamp
+         * <P>Type: INTEGER (long from System.curentTimeMillis())</P>
+         */
+        public static final String COLUMN_NAME_MODIFICATION_DATE = "modified";
+
         public static final String DEFAULT_SORT_ORDER = "modified DESC";
 
         public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.com.goodluck.hackerexample.provider.rss_item";

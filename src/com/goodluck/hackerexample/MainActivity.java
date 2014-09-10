@@ -52,6 +52,12 @@ public class MainActivity extends ListActivity {
      */
     private TextView mStatusText;
 
+    private static final String[] PROJECTION = new String[] {
+        RSSApp.RssItems._ID,
+        RSSApp.RssItems.COLUMN_NAME_TITLE,
+        RSSApp.RssItems.COLUMN_NAME_DESCRIPTION,
+        RSSApp.RssItems.COLUMN_NAME_PUBDATE
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,11 +66,23 @@ public class MainActivity extends ListActivity {
         mStatusText = (TextView)findViewById(R.id.statustext);
         List<RssItem> items = new ArrayList<RssItem>();
         mAdapter = new RSSListAdapter(this, items);
+        addDataFromDB();
         getListView().setAdapter(mAdapter);
         if (isNetworkAvailable()){
             doRss(QIUBAI_RSS_ADDR);
         } else {
             Toast.makeText(getApplicationContext(), "network not available...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void addDataFromDB() {
+        Cursor cursor = getContentResolver().query(RSSApp.RssItems.CONTENT_URI, PROJECTION,null,null,null);
+        if (cursor !=null && cursor.getCount() != 0){
+            while(cursor.moveToNext()){
+                RssItem item = new RssItem(cursor.getString(1), null, cursor.getString(2),
+                        cursor.getString(3));
+                mAdapter.add(item);
+            }
         }
     }
 
@@ -146,7 +164,7 @@ public class MainActivity extends ListActivity {
      */
     public synchronized void setCurrentWorker(RSSWorker worker) {
         if (mWorker != null) mWorker.interrupt();
-        mWorker = worker;
+        mWorker = worker; 
     }
     /**
      * Runnable that the worker thread uses to post RssItems to the
@@ -177,7 +195,6 @@ public class MainActivity extends ListActivity {
         public RSSWorker(CharSequence url) {
             mUrl = url;
         }
-
         @Override
         public void run() {
             String status = "";
@@ -309,8 +326,10 @@ public class MainActivity extends ListActivity {
                 if (tag.equals("item")) {
                     RssItem item = new RssItem(title, link, description, pubDate);
                     log("paraseRss: desc=" + description);
-                    insertToDB(item);
-                    mHandler.post(new ItemAdder(item));
+                    //need load from DB
+                    if (insertToDB(item)) {
+                        mHandler.post(new ItemAdder(item));
+                    }
                     return item;
                 }
             }
@@ -324,18 +343,28 @@ public class MainActivity extends ListActivity {
     }
 
     public boolean insertToDB(RssItem item) {
-        //query if it already exit
-//        Cursor cursor = getContentResolver().query(RSSApp.RssItems.CONTENT_URI, projection,
-//                selection, selectionArgs, sortOrder);
-        ContentValues values = new ContentValues();
-        values.put(RSSApp.RssItems.COLUMN_NAME_TITLE, item.getTitle());
-        values.put(RSSApp.RssItems.COLUMN_NAME_DESCRIPTION, item.getDescription());
-        values.put(RSSApp.RssItems.COLUMN_NAME_PUBDATE, item.getPubDate());
-        Uri newUri = getContentResolver().insert(RSSApp.RssItems.CONTENT_URI, values);
-        if (newUri != null){
-            log("insertToDB: " + newUri);
+        // query if it already exit
+        Cursor cursor = getContentResolver().query(RSSApp.RssItems.CONTENT_URI, PROJECTION,
+                RSSApp.RssItems.COLUMN_NAME_PUBDATE + "=" + "'" + item.getPubDate() + "'", null,
+                null);
+        int count = 0;
+        if (cursor != null) {
+            count = cursor.getCount();
+        }
+        if (count == 0) {
+            ContentValues values = new ContentValues();
+            values.put(RSSApp.RssItems.COLUMN_NAME_TITLE, item.getTitle());
+            values.put(RSSApp.RssItems.COLUMN_NAME_DESCRIPTION, item.getDescription());
+            values.put(RSSApp.RssItems.COLUMN_NAME_PUBDATE, item.getPubDate());
+            Uri newUri = getContentResolver().insert(RSSApp.RssItems.CONTENT_URI, values);
+            if (newUri != null) {
+                log("insertToDB: " + newUri);
+                return true;
+            } else {
+                log("insertToDb: fail!");
+            }
         } else {
-            log("insertToDb: fail!");
+            log("DB already has this record :  title = " + item.getTitle());
         }
         return false;
     }

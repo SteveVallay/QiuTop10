@@ -1,6 +1,5 @@
 package com.goodluck.hackerexample;
 
-
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -34,6 +33,20 @@ public class RSSProvider extends ContentProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues initialValues) {
+        // Gets the current system time in milliseconds
+        Long now = Long.valueOf(System.currentTimeMillis());
+
+        // If the values map doesn't contain the creation date, sets the value to the current time.
+        if (initialValues.containsKey(RSSApp.RssItems.COLUMN_NAME_CREATE_DATE) == false) {
+            initialValues.put(RSSApp.RssItems.COLUMN_NAME_CREATE_DATE, now);
+        }
+
+        // If the values map doesn't contain the modification date, sets the value to the current
+        // time.
+        if (initialValues.containsKey(RSSApp.RssItems.COLUMN_NAME_MODIFICATION_DATE) == false) {
+            initialValues.put(RSSApp.RssItems.COLUMN_NAME_MODIFICATION_DATE, now);
+        }
+
         // Opens the database object in "write" mode.
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         long rowId = db.insert(RSSApp.RssItems.TABLE_NAME, null, initialValues);
@@ -44,7 +57,7 @@ public class RSSProvider extends ContentProvider {
         }
         throw new SQLException("Failed to insert row into " + uri);
     }
-
+ 
     static class RSSDBHelper extends SQLiteOpenHelper {
 
         private static final String TAG = "RSSDBHelper";
@@ -59,7 +72,9 @@ public class RSSProvider extends ContentProvider {
                     + RSSApp.RssItems._ID + " INTEGER PRIMARY KEY,"
                     + RSSApp.RssItems.COLUMN_NAME_TITLE + " TEXT,"
                     + RSSApp.RssItems.COLUMN_NAME_DESCRIPTION + " TEXT,"
-                    + RSSApp.RssItems.COLUMN_NAME_PUBDATE + " TEXT" 
+                    + RSSApp.RssItems.COLUMN_NAME_PUBDATE + " TEXT,"
+                    + RSSApp.RssItems.COLUMN_NAME_CREATE_DATE + " INTEGER,"
+                    + RSSApp.RssItems.COLUMN_NAME_MODIFICATION_DATE + " INTEGER"
                     + ");");
         }
 
