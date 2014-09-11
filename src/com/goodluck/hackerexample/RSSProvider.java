@@ -84,7 +84,7 @@ public class RSSProvider extends ContentProvider {
                     + newVersion + ", which will destroy all old data");
 
             // Kills the table and existing data
-            db.execSQL("DROP TABLE IF EXISTS notes");
+            db.execSQL("DROP TABLE IF EXISTS ITEMS");
 
             // Recreates the database with a new version
             onCreate(db);

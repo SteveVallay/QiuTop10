@@ -178,7 +178,8 @@ public class MainActivity extends ListActivity {
         }
 
         public void run() {
-            mAdapter.add(mItem);
+            //should add to the first position.
+            mAdapter.insert(mItem, 0);
         }
 
         // NOTE: Performance idea -- would be more efficient to have he option
