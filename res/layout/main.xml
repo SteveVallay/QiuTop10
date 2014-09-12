@@ -11,9 +11,10 @@
         android:layout_height="wrap_content"
         android:autoText="false"
         android:capitalize="none"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:visibility="gone" />
 
-    <ListView
+    <com.markupartist.android.widget.PullToRefreshListView
         android:id="@android:id/list"
         android:layout_width="match_parent"
         android:layout_height="0dip"

@@ -14,6 +14,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.ListActivity;
@@ -32,6 +33,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.TwoLineListItem;
 
+import com.markupartist.android.widget.PullToRefreshListView;
+import com.markupartist.android.widget.PullToRefreshListView.OnRefreshListener;
 public class MainActivity extends ListActivity {
 
     /**
@@ -68,14 +71,43 @@ public class MainActivity extends ListActivity {
         mAdapter = new RSSListAdapter(this, items);
         addDataFromDB();
         getListView().setAdapter(mAdapter);
-        if (isNetworkAvailable()){
-            doRss(QIUBAI_RSS_ADDR);
-        } else {
-            Toast.makeText(getApplicationContext(), "network not available...", Toast.LENGTH_SHORT).show();
+        ((PullToRefreshListView) getListView()).setOnRefreshListener(new OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                // Do work to refresh the list here.
+                new GetDataTask().execute();
+            }
+        });
+    }
+
+    private class GetDataTask extends AsyncTask<Void, Void, String[]> {
+        protected void onPostExecute(String[] result) {
+            // Call onRefreshComplete when the list has been refreshed.
+            ((PullToRefreshListView) getListView()).onRefreshComplete();
+            super.onPostExecute(result);
+        }
+
+        @Override
+        protected String[] doInBackground(Void... arg0) {
+            if (isNetworkAvailable()){
+                doRss(QIUBAI_RSS_ADDR);
+            } else {
+                // post to make toast
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // TODO Auto-generated method stub
+                        Toast.makeText(getApplicationContext(), "network not available...",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            return null;
         }
     }
 
     private void addDataFromDB() {
+        //mAdapter.add(new RssItem());
         Cursor cursor = getContentResolver().query(RSSApp.RssItems.CONTENT_URI, PROJECTION,null,null,null);
         if (cursor !=null && cursor.getCount() != 0){
             while(cursor.moveToNext()){
@@ -142,7 +174,7 @@ public class MainActivity extends ListActivity {
     private void doRss(String uri){
         RSSWorker worker = new RSSWorker(uri);
         setCurrentWorker(worker);
-        mStatusText.setText("Downloading\u2026");
+        //mStatusText.setText("Downloading\u2026");
         worker.start();
     }
 
@@ -222,7 +254,7 @@ public class MainActivity extends ListActivity {
                 mHandler.post(new Runnable() {
                     public void run() {
                             log("load content..." + temp);
-                            mStatusText.setText(temp);
+                            //mStatusText.setText(temp);
                     }
                 });
             }
@@ -235,8 +267,8 @@ public class MainActivity extends ListActivity {
      */
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
-        RssItem item = mAdapter.getItem(position);
-
+        //Wrokround since PullToRefreshView already has one item in this list.
+        RssItem item = mAdapter.getItem(position - 1);
         // Creates and starts an intent to open the item.link url.
         Intent intent = new Intent();
         intent.setClass(this, DetailActivity.class);
@@ -365,6 +397,13 @@ public class MainActivity extends ListActivity {
                 log("insertToDb: fail!");
             }
         } else {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "no more update !",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
             log("DB already has this record :  title = " + item.getTitle());
         }
         return false;
