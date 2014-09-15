@@ -21,7 +21,11 @@ import android.app.ListActivity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.database.Cursor;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.util.Log;
 import android.util.Xml;
 import android.view.LayoutInflater;
@@ -155,6 +159,8 @@ public class MainActivity extends ListActivity {
             RssItem item = this.getItem(position);
 
             view.getText1().setText(item.getTitle());
+            view.getText1().setTypeface(Typeface.MONOSPACE);
+            view.getText1().setTextSize(20);
             return view;
         }
 
