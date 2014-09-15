@@ -101,7 +101,7 @@ public class MainActivity extends ListActivity {
                     @Override
                     public void run() {
                         // TODO Auto-generated method stub
-                        Toast.makeText(getApplicationContext(), "network not available...",
+                        Toast.makeText(getApplicationContext(), getString(R.string.newwork_not_available),
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -279,6 +279,7 @@ public class MainActivity extends ListActivity {
         Intent intent = new Intent();
         intent.setClass(this, DetailActivity.class);
         intent.putExtra("data", item.getDescription());
+        intent.putExtra("title", item.getTitle());
         startActivity(intent);
     }
 
@@ -406,7 +407,7 @@ public class MainActivity extends ListActivity {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(getApplicationContext(), "no more update !",
+                    Toast.makeText(getApplicationContext(), getString(R.string.no_more_update),
                             Toast.LENGTH_SHORT).show();
                 }
             });

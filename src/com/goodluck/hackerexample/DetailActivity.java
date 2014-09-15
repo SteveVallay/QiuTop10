@@ -16,6 +16,7 @@ public class DetailActivity extends Activity {
         Intent intent = getIntent();
         if (intent != null) {
             String data = intent.getExtras().getString("data");
+            this.setTitle(intent.getExtras().getString("title"));
             if (data != null) {
                 log("data:" + data);
                 mWebView.loadDataWithBaseURL(null, data, "text/html", "UTF-8", null);
