@@ -63,7 +63,8 @@ public class MainActivity extends ListActivity {
         RSSApp.RssItems._ID,
         RSSApp.RssItems.COLUMN_NAME_TITLE,
         RSSApp.RssItems.COLUMN_NAME_DESCRIPTION,
-        RSSApp.RssItems.COLUMN_NAME_PUBDATE
+        RSSApp.RssItems.COLUMN_NAME_PUBDATE,
+        RSSApp.RssItems.COLUMN_NAME_READ
     };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,12 +112,11 @@ public class MainActivity extends ListActivity {
     }
 
     private void addDataFromDB() {
-        //mAdapter.add(new RssItem());
         Cursor cursor = getContentResolver().query(RSSApp.RssItems.CONTENT_URI, PROJECTION,null,null,null);
         if (cursor !=null && cursor.getCount() != 0){
             while(cursor.moveToNext()){
                 RssItem item = new RssItem(cursor.getString(1), null, cursor.getString(2),
-                        cursor.getString(3));
+                        cursor.getString(3), cursor.getInt(4) == 0 ? false : true);
                 mAdapter.add(item);
             }
         }
@@ -157,13 +157,21 @@ public class MainActivity extends ListActivity {
             }
 
             RssItem item = this.getItem(position);
-
             view.getText1().setText(item.getTitle());
             view.getText1().setTypeface(Typeface.MONOSPACE);
             view.getText1().setTextSize(20);
+            if(unread(item)){
+                view.getText1().setTextColor(Color.CYAN);
+            }
             return view;
         }
+    }
 
+    private boolean unread(RssItem item) {
+        if (item.hasRead()) {
+            return false;
+        }
+        return true;
     }
 
     private boolean isNetworkAvailable() {
@@ -180,7 +188,6 @@ public class MainActivity extends ListActivity {
     private void doRss(String uri){
         RSSWorker worker = new RSSWorker(uri);
         setCurrentWorker(worker);
-        //mStatusText.setText("Downloading\u2026");
         worker.start();
     }
 
@@ -276,6 +283,8 @@ public class MainActivity extends ListActivity {
         //Wrokround since PullToRefreshView already has one item in this list.
         RssItem item = mAdapter.getItem(position - 1);
         // Creates and starts an intent to open the item.link url.
+        updateAsRead(item.getTitle());
+        ((TwoLineListItem) v).getText1().setTextColor(Color.BLACK);
         Intent intent = new Intent();
         intent.setClass(this, DetailActivity.class);
         intent.putExtra("data", item.getDescription());
@@ -289,17 +298,21 @@ public class MainActivity extends ListActivity {
         private String mLink;
         private String mDescription;
         private String mPubDate;
+        private boolean mRead;
 
         public RssItem() {
             mTitle = "";
             mLink = "";
             mDescription = "";
+            mPubDate = "";
+            mRead = false;
         }
-        public RssItem(String title, String link, String desc, String pubDate) {
+        public RssItem(String title, String link, String desc, String pubDate, boolean read) {
             mTitle = title;
             mLink = link;
             mDescription = desc;
             mPubDate = pubDate;
+            mRead = read;
         }
 
         public String getPubDate() {
@@ -316,6 +329,10 @@ public class MainActivity extends ListActivity {
 
         public String getDescription() {
             return mDescription;
+        }
+
+        public boolean hasRead() {
+            return mRead;
         }
     }
 
@@ -364,7 +381,7 @@ public class MainActivity extends ListActivity {
                 // running on the UI thread).
                 String tag = xpp.getName();
                 if (tag.equals("item")) {
-                    RssItem item = new RssItem(title, link, description, pubDate);
+                    RssItem item = new RssItem(title, link, description, pubDate, false);
                     log("paraseRss: desc=" + description);
                     //need load from DB
                     if (insertToDB(item)) {
@@ -396,6 +413,7 @@ public class MainActivity extends ListActivity {
             values.put(RSSApp.RssItems.COLUMN_NAME_TITLE, item.getTitle());
             values.put(RSSApp.RssItems.COLUMN_NAME_DESCRIPTION, item.getDescription());
             values.put(RSSApp.RssItems.COLUMN_NAME_PUBDATE, item.getPubDate());
+            values.put(RSSApp.RssItems.COLUMN_NAME_READ, item.hasRead() ? 1 : 0);
             Uri newUri = getContentResolver().insert(RSSApp.RssItems.CONTENT_URI, values);
             if (newUri != null) {
                 log("insertToDB: " + newUri);
@@ -414,5 +432,12 @@ public class MainActivity extends ListActivity {
             log("DB already has this record :  title = " + item.getTitle());
         }
         return false;
+    }
+
+    public void updateAsRead(String title){
+        ContentValues values = new ContentValues();
+        values.put(RSSApp.RssItems.COLUMN_NAME_READ, 1);
+        String where = RSSApp.RssItems.COLUMN_NAME_TITLE + "=" + "'" + title + "'";
+        getContentResolver().update(RSSApp.RssItems.CONTENT_URI, values, where, null);
     }
 }

@@ -15,7 +15,7 @@ import android.util.Log;
 public class RSSProvider extends ContentProvider {
 
     private static final String DATABASE_NAME = "rss.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // Handle to a new DatabaseHelper.
     private RSSDBHelper mOpenHelper;
@@ -73,6 +73,7 @@ public class RSSProvider extends ContentProvider {
                     + RSSApp.RssItems.COLUMN_NAME_TITLE + " TEXT,"
                     + RSSApp.RssItems.COLUMN_NAME_DESCRIPTION + " TEXT,"
                     + RSSApp.RssItems.COLUMN_NAME_PUBDATE + " TEXT,"
+                    + RSSApp.RssItems.COLUMN_NAME_READ + " INTEGER,"
                     + RSSApp.RssItems.COLUMN_NAME_CREATE_DATE + " INTEGER,"
                     + RSSApp.RssItems.COLUMN_NAME_MODIFICATION_DATE + " INTEGER"
                     + ");");
@@ -115,8 +116,11 @@ public class RSSProvider extends ContentProvider {
     }
 
     @Override
-    public int update(Uri arg0, ContentValues arg1, String arg2, String[] arg3) {
-        return 0;
+    public int update(Uri uri, ContentValues values, String where, String[] whereArgs) {
+        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        int count = db.update(RSSApp.RssItems.TABLE_NAME, values, where, whereArgs);
+        getContext().getContentResolver().notifyChange(uri, null);
+        return count;
     }
 
 }

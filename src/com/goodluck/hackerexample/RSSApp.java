@@ -58,6 +58,8 @@ public final class RSSApp {
          * <P>Type: TEXT</P>
          */
         public static final String COLUMN_NAME_PUBDATE = "pubDate";
+
+        public static final String COLUMN_NAME_READ = "read";
         /**
          * The default sort order for this table
          */
