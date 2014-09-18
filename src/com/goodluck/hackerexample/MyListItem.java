@@ -31,7 +31,7 @@ public class MyListItem extends TwoLineListItem  implements Checkable{
     public void setChecked(boolean check) {
         isChecked = check;
         if(isChecked){
-            this.setBackgroundColor(Color.MAGENTA);
+            this.setBackgroundDrawable(getResources().getDrawable(R.drawable.list_selected_holo_light));
         } else {
             this.setBackgroundColor(Color.TRANSPARENT);
         }

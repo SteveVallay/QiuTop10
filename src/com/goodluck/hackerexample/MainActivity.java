@@ -546,7 +546,7 @@ public class MainActivity extends ListActivity {
             if (checked) {
                 mSelectPositionList.add(position);
             } else {
-                mSelectPositionList.remove(position);
+                mSelectPositionList.remove(new Integer(position));
             }
         }
 
