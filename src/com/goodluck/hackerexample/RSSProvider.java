@@ -21,9 +21,11 @@ public class RSSProvider extends ContentProvider {
     private RSSDBHelper mOpenHelper;
 
     @Override
-    public int delete(Uri arg0, String arg1, String[] arg2) {
-        // TODO Auto-generated method stub
-        return 0;
+    public int delete(Uri uri, String where, String[] whereArgs) {
+        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        int count = db.delete(RSSApp.RssItems.TABLE_NAME, where, whereArgs);
+        getContext().getContentResolver().notifyChange(uri, null);
+        return count;
     }
 
     @Override
@@ -85,7 +87,7 @@ public class RSSProvider extends ContentProvider {
                     + newVersion + ", which will destroy all old data");
 
             // Kills the table and existing data
-            db.execSQL("DROP TABLE IF EXISTS ITEMS");
+            db.execSQL("DROP TABLE IF EXISTS "+ RSSApp.RssItems.TABLE_NAME);
 
             // Recreates the database with a new version
             onCreate(db);

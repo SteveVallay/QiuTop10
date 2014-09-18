@@ -6,4 +6,9 @@
     <string name="pull_to_refresh_tap_label">点击刷新...</string>
     <string name="newwork_not_available">网络不可用!</string>
     <string name="no_more_update">没有新消息,明天再来看看吧 !</string>
+    <string name="delete">删除</string>
+    <string name="confirm_delete_dialog_title">删除</string>
+    <string name="confirm_delete_selected_messages">确定要删除所选消息?</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
 </resources>

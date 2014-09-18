@@ -17,18 +17,26 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.util.Log;
 import android.util.Xml;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -59,6 +67,18 @@ public class MainActivity extends ListActivity {
      */
     private TextView mStatusText;
 
+    private DataSetObserver mDataSetObserver = new DataSetObserver() {
+        @Override
+        public void onChanged() {
+            reloadData();
+            super.onChanged();
+        }
+
+        @Override
+        public void onInvalidated() {
+            super.onInvalidated();
+        }
+    };
     private static final String[] PROJECTION = new String[] {
         RSSApp.RssItems._ID,
         RSSApp.RssItems.COLUMN_NAME_TITLE,
@@ -74,7 +94,6 @@ public class MainActivity extends ListActivity {
         mStatusText = (TextView)findViewById(R.id.statustext);
         List<RssItem> items = new ArrayList<RssItem>();
         mAdapter = new RSSListAdapter(this, items);
-        addDataFromDB();
         getListView().setAdapter(mAdapter);
         ((PullToRefreshListView) getListView()).setOnRefreshListener(new OnRefreshListener() {
             @Override
@@ -83,8 +102,33 @@ public class MainActivity extends ListActivity {
                 new GetDataTask().execute();
             }
         });
+        getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+        getListView().setMultiChoiceModeListener(new ModeCallback());
     }
 
+    @Override
+    protected void onStart() {
+        mAdapter.clear();
+        addDataFromDB();
+        mAdapter.registerDataSetObserver(mDataSetObserver);
+        getListView().setAdapter(mAdapter);
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        mAdapter.unregisterDataSetObserver(mDataSetObserver);
+        super.onStop();
+    }
+
+    protected void reloadData(){
+        mAdapter.unregisterDataSetObserver(mDataSetObserver);
+        mAdapter.clear();
+        addDataFromDB();
+        mAdapter.registerDataSetObserver(mDataSetObserver);
+        getListView().setAdapter(mAdapter);
+        getListView().invalidateViews();
+    }
     private class GetDataTask extends AsyncTask<Void, Void, String[]> {
         protected void onPostExecute(String[] result) {
             // Call onRefreshComplete when the list has been refreshed.
@@ -146,14 +190,14 @@ public class MainActivity extends ListActivity {
          */
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            TwoLineListItem view;
+            MyListItem view;
 
             // Here view may be passed in for re-use, or we make a new one.
             if (convertView == null) {
-                view = (TwoLineListItem) mInflater.inflate(android.R.layout.simple_list_item_2,
+                view = (MyListItem) mInflater.inflate(R.layout.simple_list_item_2,
                         null);
             } else {
-                view = (TwoLineListItem) convertView;
+                view = (MyListItem) convertView;
             }
 
             RssItem item = this.getItem(position);
@@ -284,7 +328,7 @@ public class MainActivity extends ListActivity {
         RssItem item = mAdapter.getItem(position - 1);
         // Creates and starts an intent to open the item.link url.
         updateAsRead(item.getTitle());
-        ((TwoLineListItem) v).getText1().setTextColor(Color.BLACK);
+        ((MyListItem) v).getText1().setTextColor(Color.BLACK);
         Intent intent = new Intent();
         intent.setClass(this, DetailActivity.class);
         intent.putExtra("data", item.getDescription());
@@ -439,5 +483,82 @@ public class MainActivity extends ListActivity {
         values.put(RSSApp.RssItems.COLUMN_NAME_READ, 1);
         String where = RSSApp.RssItems.COLUMN_NAME_TITLE + "=" + "'" + title + "'";
         getContentResolver().update(RSSApp.RssItems.CONTENT_URI, values, where, null);
+    }
+
+    class ModeCallback implements ListView.MultiChoiceModeListener {
+
+        private ArrayList<Integer> mSelectPositionList = new ArrayList<Integer>();
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem menuItem) {
+            switch (menuItem.getItemId()) {
+                case R.id.delete:
+                    confirmDeleteDialog(new OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface arg0, int arg1) {
+                            deleteItems();
+                        }
+                    });
+                    break;
+                default:
+                    break;
+            }
+            mode.finish();
+            return true;
+        }
+
+        protected void deleteItems() {
+            for (int id: mSelectPositionList){
+                Log.d("good", "id="+id + "will be deleted...");
+                RssItem item = (RssItem) getListView().getItemAtPosition(id);
+                deleteItem(item);
+            }
+            mAdapter.notifyDataSetChanged();
+        }
+
+        protected void deleteItem(RssItem it){
+            getContentResolver().delete(RSSApp.RssItems.CONTENT_URI,
+                    RSSApp.RssItems.COLUMN_NAME_TITLE + "=" + "'" + it.getTitle()+"'", null);
+        }
+
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            MenuInflater inflater = getMenuInflater();
+            inflater.inflate(R.menu.list_select_menu, menu);
+            return true;
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode arg0, Menu arg1) {
+            mSelectPositionList.clear();
+            return true;
+        }
+
+        @Override
+        public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+            // TODO Auto-generated method stub
+            final int checkedCount = getListView().getCheckedItemCount();
+            mode.setTitle(" " + checkedCount);
+            Log.d("good", "onItemCheckedStateChanged :" + "position=" +position +"|checked="  +checked);
+            if (checked) {
+                mSelectPositionList.add(position);
+            } else {
+                mSelectPositionList.remove(position);
+            }
+        }
+
+        private void confirmDeleteDialog(OnClickListener listener) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle(R.string.confirm_delete_dialog_title);
+            builder.setIconAttribute(android.R.attr.alertDialogIcon);
+            builder.setCancelable(true);
+            builder.setPositiveButton(R.string.yes, listener);
+            builder.setNegativeButton(R.string.no, null);
+            builder.setMessage(R.string.confirm_delete_selected_messages);
+            builder.show();
+        }
     }
 }

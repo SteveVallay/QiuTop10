@@ -7,4 +7,9 @@
     <string name="pull_to_refresh_tap_label">Tap to refresh...</string>
     <string name="newwork_not_available">Network not available !</string>
     <string name="no_more_update">No more news !</string>
+    <string name="delete">Delete</string>
+    <string name="confirm_delete_dialog_title">Delete</string>
+    <string name="confirm_delete_selected_messages">Are you sure to delete all items selected ?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>
